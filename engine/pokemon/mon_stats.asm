@@ -122,8 +122,15 @@ PrintTempMonStats:
 	next "@"
 
 GetGender:
-	
+	ld a, [wMonType]
+	cp PARTYMON
+	jr z, .usePartySpecies
+	ld a, [wEnemyMonSpecies]
+	ld [wTestingRam], a
+	jr .gotSpecies
+.usePartySpecies
 	ld a, [wCurPartySpecies]
+.gotSpecies
 	dec a
 	ld hl, BaseData + BASE_GENDER
 	ld bc, BASE_DATA_SIZE
@@ -142,33 +149,18 @@ GetGender:
 
 
 	ld a, [wMonType]
-	cp WILDMON
-	jr z, .wild
-	cp TEMPMON
-	jr z, .tempmon
-	cp BOXMON
-	jr z, .boxmon
-	cp OTPARTYMON
+	cp PARTYMON
+	jr z, .party
+	ld a, [wBattleType]
+	cp TRAINER_BATTLE
 	jr z, .trainer
-	; else party mon
-	jr .party
-
-.wild
+.tempmon
 	ld a, [wTempPID1]
 	ld l, a
 	ld a, [wTempPID2]
 	ld h, a
 	jr .determine
-.tempmon
 .party
-	ld a, [wTempMonCaughtData]
-	ld l, a
-	ld a, [wTempMonCaughtData + 1]
-	ld h, a
-	jr .determine
-
-.boxmon
-	; Same as party for now (uses tempmon copy)
 	ld a, [wTempMonCaughtData]
 	ld l, a
 	ld a, [wTempMonCaughtData + 1]
@@ -186,7 +178,7 @@ GetGender:
 	; PID low byte now in L, ratio in B
 	ld a, l
 	cp b
-	jr nc, .female
+	jr c, .female
 	jr .male
 
 .female

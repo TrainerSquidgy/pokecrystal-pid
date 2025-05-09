@@ -3152,7 +3152,8 @@ wErinFightCount::    db
 ; Temporary PIDs
 wTempPID1:: db
 wTempPID2:: db
-	ds 98
+wTestingRam:: db
+	ds 97
 
 wEventFlags:: flag_array NUM_EVENTS
 

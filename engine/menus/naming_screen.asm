@@ -104,15 +104,6 @@ NamingScreenJumptable:
 	inc de
 	hlcoord 5, 4
 	call PlaceString
-	farcall GetGender
-	jr c, .genderless
-	ld a, "♂"
-	jr nz, .place_gender
-	ld a, "♀"
-.place_gender
-	hlcoord 1, 2
-	ld [hl], a
-.genderless
 	call .StoreMonIconParams
 	ret
 
