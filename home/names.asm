@@ -148,6 +148,8 @@ GetPokemonName::
 	rst Bankswitch
 	ret
 
+
+
 GetItemName::
 ; Get item name for wNamedObjectIndex.
 

@@ -3149,7 +3149,10 @@ wKenjiFightCount::   db ; unreferenced
 wParryFightCount::   db
 wErinFightCount::    db
 
-	ds 100
+; Temporary PIDs
+wTempPID1:: db
+wTempPID2:: db
+	ds 98
 
 wEventFlags:: flag_array NUM_EVENTS
 

@@ -1,14 +1,11 @@
-	const_def 1
+	const_def 0
 	const PINK_PAGE  ; 1
 	const GREEN_PAGE ; 2
 	const BLUE_PAGE  ; 3
-DEF NUM_STAT_PAGES EQU const_value - 1
+	const ORANGE_PAGE ; 4
+DEF NUM_STAT_PAGES EQU const_value 
 
 DEF STAT_PAGE_MASK EQU %00000011
-	const_def 4
-	const STATS_SCREEN_PLACE_FRONTPIC ; 4
-	const STATS_SCREEN_ANIMATE_MON    ; 5
-	const STATS_SCREEN_ANIMATE_EGG    ; 6
 
 BattleStatsScreenInit:
 	ld a, [wLinkMode]
@@ -68,11 +65,6 @@ StatsScreenMain:
 	ld [wJumptableIndex], a
 	ld [wStatsScreenFlags], a
 
-	ld a, [wStatsScreenFlags]
-	and ~STAT_PAGE_MASK
-	or PINK_PAGE ; first_page
-	ld [wStatsScreenFlags], a
-
 .loop
 	ld a, [wJumptableIndex]
 	and ~(1 << 7)
@@ -80,7 +72,7 @@ StatsScreenMain:
 	rst JumpTable
 	call StatsScreen_WaitAnim
 	ld a, [wJumptableIndex]
-	bit JUMPTABLE_EXIT_F, a
+	bit 7, a
 	jr z, .loop
 	ret
 
@@ -89,22 +81,17 @@ StatsScreenMobile:
 	ld [wJumptableIndex], a
 	ld [wStatsScreenFlags], a
 
-	ld a, [wStatsScreenFlags]
-	and ~STAT_PAGE_MASK
-	or PINK_PAGE ; first_page
-	ld [wStatsScreenFlags], a
-
 .loop
 	farcall Mobile_SetOverworldDelay
 	ld a, [wJumptableIndex]
-	and JUMPTABLE_INDEX_MASK
+	and $7f
 	ld hl, StatsScreenPointerTable
 	rst JumpTable
 	call StatsScreen_WaitAnim
 	farcall MobileComms_CheckInactivityTimer
 	jr c, .exit
 	ld a, [wJumptableIndex]
-	bit JUMPTABLE_EXIT_F, a
+	bit 7, a
 	jr z, .loop
 
 .exit
@@ -122,9 +109,9 @@ StatsScreenPointerTable:
 
 StatsScreen_WaitAnim:
 	ld hl, wStatsScreenFlags
-	bit STATS_SCREEN_ANIMATE_EGG, [hl]
+	bit 6, [hl]
 	jr nz, .try_anim
-	bit STATS_SCREEN_ANIMATE_MON, [hl]
+	bit 5, [hl]
 	jr nz, .finish
 	call DelayFrame
 	ret
@@ -133,28 +120,28 @@ StatsScreen_WaitAnim:
 	farcall SetUpPokeAnim
 	jr nc, .finish
 	ld hl, wStatsScreenFlags
-	res STATS_SCREEN_ANIMATE_EGG, [hl]
+	res 6, [hl]
 .finish
 	ld hl, wStatsScreenFlags
-	res STATS_SCREEN_ANIMATE_MON, [hl]
+	res 5, [hl]
 	farcall HDMATransferTilemapToWRAMBank3
 	ret
 
 StatsScreen_SetJumptableIndex:
 	ld a, [wJumptableIndex]
-	and JUMPTABLE_EXIT
+	and $80
 	or h
 	ld [wJumptableIndex], a
 	ret
 
 StatsScreen_Exit:
 	ld hl, wJumptableIndex
-	set JUMPTABLE_EXIT_F, [hl]
+	set 7, [hl]
 	ret
 
 MonStatsInit:
 	ld hl, wStatsScreenFlags
-	res STATS_SCREEN_ANIMATE_EGG, [hl]
+	res 6, [hl]
 	call ClearBGPalettes
 	call ClearTilemap
 	farcall HDMATransferTilemapToWRAMBank3
@@ -164,7 +151,7 @@ MonStatsInit:
 	jr z, .egg
 	call StatsScreen_InitUpperHalf
 	ld hl, wStatsScreenFlags
-	set STATS_SCREEN_PLACE_FRONTPIC, [hl]
+	set 4, [hl]
 	ld h, 4
 	call StatsScreen_SetJumptableIndex
 	ret
@@ -224,7 +211,7 @@ if DEF(_DEBUG)
 	hlcoord 8, 17
 	call PlaceString
 	ld hl, wStatsScreenFlags
-	set STATS_SCREEN_ANIMATE_MON, [hl]
+	set 5, [hl]
 	pop hl
 	pop de
 	pop bc
@@ -239,7 +226,7 @@ endc
 StatsScreen_LoadPage:
 	call StatsScreen_LoadGFX
 	ld hl, wStatsScreenFlags
-	res STATS_SCREEN_PLACE_FRONTPIC, [hl]
+	res 4, [hl]
 	ld a, [wJumptableIndex]
 	inc a
 	ld [wJumptableIndex], a
@@ -379,20 +366,22 @@ StatsScreen_JoypadAction:
 
 .a_button
 	ld a, c
-	cp BLUE_PAGE ; last page
+	cp ORANGE_PAGE ; last page
 	jr z, .b_button
 .d_right
 	inc c
-	ld a, BLUE_PAGE ; last page
+	ld a, ORANGE_PAGE ; last page
 	cp c
 	jr nc, .set_page
 	ld c, PINK_PAGE ; first page
 	jr .set_page
 
 .d_left
+	ld a, c
 	dec c
+	and a
 	jr nz, .set_page
-	ld c, BLUE_PAGE ; last page
+	ld c, ORANGE_PAGE ; last page
 	jr .set_page
 
 .done
@@ -513,7 +502,7 @@ StatsScreen_PlaceHorizontalDivider:
 	ret
 
 StatsScreen_PlacePageSwitchArrows:
-	hlcoord 12, 6
+	hlcoord 10, 6
 	ld [hl], "◀"
 	hlcoord 19, 6
 	ld [hl], "▶"
@@ -537,7 +526,7 @@ StatsScreen_LoadGFX:
 	call .PageTilemap
 	call .LoadPals
 	ld hl, wStatsScreenFlags
-	bit STATS_SCREEN_PLACE_FRONTPIC, [hl]
+	bit 4, [hl]
 	jr nz, .place_frontpic
 	call SetDefaultBGPAndOBP
 	ret
@@ -563,24 +552,56 @@ StatsScreen_LoadGFX:
 	farcall LoadStatsScreenPals
 	call DelayFrame
 	ld hl, wStatsScreenFlags
-	set STATS_SCREEN_ANIMATE_MON, [hl]
+	set 5, [hl]
 	ret
 
 .PageTilemap:
 	ld a, [wStatsScreenFlags]
 	maskbits NUM_STAT_PAGES
-	dec a
 	ld hl, .Jumptable
 	rst JumpTable
 	ret
 
 .Jumptable:
 ; entries correspond to *_PAGE constants
-	table_width 2
+	table_width 2, StatsScreen_LoadGFX.Jumptable
 	dw LoadPinkPage
 	dw LoadGreenPage
 	dw LoadBluePage
+	dw LoadOrangePage
 	assert_table_length NUM_STAT_PAGES
+
+LoadOrangePage:
+	call .placePID
+	ret
+
+.placePID
+	; Load 16-bit value from wTempMonCaughtData
+	ld a, [wTempMonCaughtData]
+	ld l, a
+	ld a, [wTempMonCaughtData + 1]
+	ld h, a
+
+	; Store to wTextDecimalByte (2 bytes)
+	ld a, l
+	ld [wTextDecimalByte], a
+	ld a, h
+	ld [wTextDecimalByte + 1], a
+
+	; Display "PID:" label
+	ld de, .pidLabel
+	hlcoord 1, 9
+	call PlaceString
+
+	; Display the 16-bit number after "PID:"
+	hlcoord 6, 9 ; Adjust as needed
+	ld de, wTextDecimalByte
+	lb bc, PRINTNUM_LEFTALIGN | 2, 5 ; 5-digit max
+	call PrintNum
+	ret
+
+.pidLabel:
+	db "PID:@"
 
 LoadPinkPage:
 	hlcoord 0, 9
@@ -857,7 +878,7 @@ StatsScreen_PlaceFrontpic:
 
 .AnimateMon:
 	ld hl, wStatsScreenFlags
-	set STATS_SCREEN_ANIMATE_MON, [hl]
+	set 5, [hl]
 	ld a, [wCurPartySpecies]
 	cp UNOWN
 	jr z, .unown
@@ -899,7 +920,7 @@ StatsScreen_PlaceFrontpic:
 	ld e, ANIM_MON_MENU
 	predef LoadMonAnimation
 	ld hl, wStatsScreenFlags
-	set STATS_SCREEN_ANIMATE_EGG, [hl]
+	set 6, [hl]
 	ret
 
 StatsScreen_GetAnimationParam:
@@ -1042,7 +1063,7 @@ endc
 	hlcoord 1, 9
 	call PlaceString
 	ld hl, wStatsScreenFlags
-	set STATS_SCREEN_ANIMATE_MON, [hl]
+	set 5, [hl]
 	call SetDefaultBGPAndOBP
 	call DelayFrame
 	hlcoord 0, 0
@@ -1108,10 +1129,13 @@ StatsScreen_AnimateEgg:
 	ld d, $0
 	predef LoadMonAnimation
 	ld hl, wStatsScreenFlags
-	set STATS_SCREEN_ANIMATE_EGG, [hl]
+	set 6, [hl]
 	ret
 
 StatsScreen_LoadPageIndicators:
+	hlcoord 11, 5
+	ld a, $36 ; " " " "
+	call .load_square
 	hlcoord 13, 5
 	ld a, $36 ; first of 4 small square tiles
 	call .load_square
@@ -1122,13 +1146,19 @@ StatsScreen_LoadPageIndicators:
 	ld a, $36 ; " " " "
 	call .load_square
 	ld a, c
+	cp PINK_PAGE
+	hlcoord 11, 5
+	jr z, .load_highlighted_square
 	cp GREEN_PAGE
+	hlcoord 13, 5
+	jr z, .load_highlighted_square
+	cp BLUE_PAGE
+	hlcoord 15, 5
+	jr z, .load_highlighted_square
+	; must be ORANGE_PAGE
+	hlcoord 17, 5
+.load_highlighted_square
 	ld a, $3a ; first of 4 large square tiles
-	hlcoord 13, 5 ; PINK_PAGE (< GREEN_PAGE)
-	jr c, .load_square
-	hlcoord 15, 5 ; GREEN_PAGE (= GREEN_PAGE)
-	jr z, .load_square
-	hlcoord 17, 5 ; BLUE_PAGE (> GREEN_PAGE)
 .load_square
 	push bc
 	ld [hli], a
