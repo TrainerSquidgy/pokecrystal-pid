@@ -122,117 +122,137 @@ PrintTempMonStats:
 	next "@"
 
 GetGender:
-; Return the gender of a given monster (wCurPartyMon/wCurOTMon/wCurWildMon).
-; When calling this function, a should be set to an appropriate wMonType value.
-
-; return values:
-; a = 1: f = nc|nz; male
-; a = 0: f = nc|z;  female
-;        f = c:  genderless
-
-; This is determined by comparing the Attack and Speed DVs
-; with the species' gender ratio.
-
-; Figure out what type of monster struct we're looking at.
-
-; 0: PartyMon
-	ld hl, wPartyMon1DVs
-	ld bc, PARTYMON_STRUCT_LENGTH
 	ld a, [wMonType]
-	and a
-	jr z, .PartyMon
-
-; 1: OTPartyMon
-	ld hl, wOTPartyMon1DVs
-	dec a
-	jr z, .PartyMon
-
-; 2: sBoxMon
-	ld hl, sBoxMon1DVs
-	ld bc, BOXMON_STRUCT_LENGTH
-	dec a
-	jr z, .sBoxMon
-
-; 3: Unknown
-	ld hl, wTempMonDVs
-	dec a
-	jr z, .DVs
-
-; else: WildMon
-	ld hl, wEnemyMonDVs
-	jr .DVs
-
-; Get our place in the party/box.
-
-.PartyMon:
-.sBoxMon
-	ld a, [wCurPartyMon]
-	call AddNTimes
-
-.DVs:
-; sBoxMon data is read directly from SRAM.
-	ld a, [wMonType]
+	cp WILDMON
+	jr z, .wild
+	cp TEMPMON
+	jr z, .tempmon
 	cp BOXMON
-	ld a, BANK(sBox)
-	call z, OpenSRAM
+	jr z, .boxmon
+	cp OTPARTYMON
+	jr z, .trainer
+	; else party mon
+	jr .party
 
-; Attack DV
-	ld a, [hli]
-	and $f0
-	ld b, a
-; Speed DV
-	ld a, [hl]
-	and $f0
-	swap a
+.wild
+	ld a, [wTempPID1]
+	ld l, a
+	ld a, [wTempPID2]
+	ld h, a
+	jr .determine_gender_from_pid
 
-; Put our DVs together.
-	or b
-	ld b, a
+.tempmon
+.party
+	ld a, [wTempMonCaughtData]
+	ld l, a
+	ld a, [wTempMonCaughtData + 1]
+	ld h, a
+	jr .determine_gender_from_pid
 
-; Close SRAM if we were dealing with a sBoxMon.
-	ld a, [wMonType]
-	cp BOXMON
-	call z, CloseSRAM
+.boxmon
+	; Same as party for now (uses tempmon copy)
+	ld a, [wTempMonCaughtData]
+	ld l, a
+	ld a, [wTempMonCaughtData + 1]
+	ld h, a
+	jr .determine_gender_from_pid
 
-; We need the gender ratio to do anything with this.
-	push bc
+.trainer
+	ld a, [wTrainerClass]
+	call CheckTrainerGender
+	ret c ; genderless
+	jr z, .female
+	ld a, 1
+	ret ; male
+
+.female
+	xor a
+	ret
+
+.determine_gender_from_pid
+	; HL = PID
+	; Load gender ratio
+	push hl
 	ld a, [wCurPartySpecies]
 	dec a
 	ld hl, BaseData + BASE_GENDER
 	ld bc, BASE_DATA_SIZE
 	call AddNTimes
-	pop bc
-
 	ld a, BANK(BaseData)
 	call GetFarByte
-
-; The higher the ratio, the more likely the monster is to be female.
+	pop hl
 
 	cp GENDER_UNKNOWN
-	jr z, .Genderless
+	jr z, .genderless
 
-	and a ; GENDER_F0?
-	jr z, .Male
-
+	cp GENDER_F0
+	jr z, .male
 	cp GENDER_F100
-	jr z, .Female
+	jr z, .female
 
-; Values below the ratio are male, and vice versa.
+	; Compare lower byte of PID to ratio
+	ld a, l
 	cp b
-	jr c, .Male
+	jr c, .male
+	jr .female
 
-.Female:
-	xor a
+.genderless
+	scf
 	ret
 
-.Male:
+.male
+	ld a, 1
+	and a
+	ret
+	
+CheckTrainerGender:
+	; Input: a = trainer class
+	; Output:
+	;   a = 1 → male
+	;   a = 0 → female
+	;   carry set → genderless (not found)
+
+	ld hl, MaleTrainers
+.loop_male
+	ld b, [hl]
+	cp b
+	jr z, .found_male
+	inc hl
+	ld de, MaleTrainers_End
+	ld a, h
+	cp d
+	jr nz, .loop_male
+	ld a, l
+	cp e
+	jr nz, .loop_male
+
+	ld hl, FemaleTrainers
+.loop_female
+	ld b, [hl]
+	cp b
+	jr z, .found_female
+	inc hl
+	ld de, FemaleTrainers_End
+	ld a, h
+	cp d
+	jr nz, .loop_female
+	ld a, l
+	cp e
+	jr nz, .loop_female
+
+	; Not found → genderless
+	scf
+	ret
+
+.found_male
 	ld a, 1
 	and a
 	ret
 
-.Genderless:
-	scf
+.found_female
+	xor a
 	ret
+
 
 ListMovePP:
 	ld a, [wNumMoves]
