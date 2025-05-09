@@ -125,8 +125,12 @@ GetGender:
 	ld a, [wMonType]
 	cp PARTYMON
 	jr z, .usePartySpecies
+	cp TEMPMON
+	jr z, .useTempSpecies
 	ld a, [wEnemyMonSpecies]
-	ld [wTestingRam], a
+	jr .gotSpecies
+.useTempSpecies
+	ld a, [wTempMonSpecies]
 	jr .gotSpecies
 .usePartySpecies
 	ld a, [wCurPartySpecies]
@@ -138,7 +142,7 @@ GetGender:
 	ld a, BANK(BaseData)
 	call GetFarByte
 	ld b, a ; store gender ratio
-
+	ld [wTestingRam], a
 	cp GENDER_UNKNOWN
 	jr z, .genderless
 
@@ -151,6 +155,8 @@ GetGender:
 	ld a, [wMonType]
 	cp PARTYMON
 	jr z, .party
+	cp WILDMON
+	jr z, .tempmon
 	ld a, [wBattleType]
 	cp TRAINER_BATTLE
 	jr z, .trainer
@@ -183,15 +189,17 @@ GetGender:
 
 .female
 	xor a
+	ld [wDisplayedGender], a
 	ret
 
 .male
 	ld a, 1
-	and a
+	ld [wDisplayedGender], a
 	ret
 
 .genderless
-	scf
+	ld a, 2
+	ld [wDisplayedGender], a
 	ret
 	
 CheckTrainerGender:

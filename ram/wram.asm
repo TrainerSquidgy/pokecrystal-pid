@@ -3153,7 +3153,8 @@ wErinFightCount::    db
 wTempPID1:: db
 wTempPID2:: db
 wTestingRam:: db
-	ds 97
+wDisplayedGender:: db
+	ds 96
 
 wEventFlags:: flag_array NUM_EVENTS
 

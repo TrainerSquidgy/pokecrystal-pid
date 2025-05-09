@@ -4755,16 +4755,23 @@ DrawEnemyHUD:
 	ld a, [hl]
 	ld [de], a
 
-	ld a, TEMPMON
+	ld a, WILDMON
 	ld [wMonType], a
 	callfar GetGender
+	ld a, [wDisplayedGender]
+	and a
+	jr z, .female
+	dec a
+	and a
+	jr z, .male
 	ld a, " "
-	jr c, .got_gender
+	jr .place_gender
+.male
 	ld a, "♂"
-	jr nz, .got_gender
+	jr .place_gender
+.female
 	ld a, "♀"
-
-.got_gender
+.place_gender
 	hlcoord 9, 1
 	ld [hl], a
 
