@@ -3903,16 +3903,13 @@ InitBattleMon:
 	ret
 
 BattleCheckPlayerShininess:
-	call GetPartyMonDVs
-	jr BattleCheckShininess
+	farcall CheckPlayerShinyFromPID
+	ret
 
 BattleCheckEnemyShininess:
-	call GetEnemyMonDVs
 
 BattleCheckShininess:
-	ld b, h
-	ld c, l
-	callfar CheckShininess
+	farcall CheckEnemyShinyFromPID
 	ret
 
 GetPartyMonDVs:
@@ -8288,6 +8285,8 @@ ExitBattle:
 CleanUpBattleRAM:
 	call BattleEnd_HandleRoamMons
 	xor a
+	ld [wTempPID1], a
+	ld [wTempPID2], a
 	ld [wLowHealthAlarm], a
 	ld [wBattleMode], a
 	ld [wBattleType], a

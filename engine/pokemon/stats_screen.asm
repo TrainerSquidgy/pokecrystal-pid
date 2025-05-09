@@ -509,8 +509,7 @@ StatsScreen_PlacePageSwitchArrows:
 	ret
 
 StatsScreen_PlaceShinyIcon:
-	ld bc, wTempMonDVs
-	farcall CheckShininess
+	farcall CheckPlayerShinyFromPID
 	ret nc
 	hlcoord 19, 0
 	ld [hl], "⁂"
