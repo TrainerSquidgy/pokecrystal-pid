@@ -6111,8 +6111,17 @@ LoadEnemyMon:
 	cp BATTLETYPE_FORCESHINY
 	jr nz, .GenerateDVs
 
-	ld b, ATKDEFDV_SHINY ; $ea
-	ld c, SPDSPCDV_SHINY ; $aa
+	call Random
+	and %00000111 ; choose 0–7
+	ld e, a
+	ld d, 0
+	ld hl, ShinyPIDTable
+	add hl, de
+	add hl, de ; each entry is 2 bytes
+	ld a, [hli]
+	ld [wTempPID1], a
+	ld a, [hl]
+	ld [wTempPID2], a
 	jr .UpdateDVs
 
 .GenerateDVs:
@@ -9144,3 +9153,13 @@ BattleStartMessage:
 	farcall Mobile_PrintOpponentBattleMessage
 
 	ret
+
+ShinyPIDTable:
+	dw $1FFF
+	dw $3FFF
+	dw $5FFF
+	dw $7FFF
+	dw $9FFF
+	dw $BFFF
+	dw $DFFF
+	dw $FFFF
