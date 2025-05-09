@@ -6109,7 +6109,7 @@ LoadEnemyMon:
 ; Forced shiny battle type
 ; Used by Red Gyarados at Lake of Rage
 	cp BATTLETYPE_FORCESHINY
-	jr nz, .GenerateDVs
+	jr .GenerateDVs
 
 	call Random
 	and %00000111 ; choose 0–7
@@ -8294,8 +8294,6 @@ ExitBattle:
 CleanUpBattleRAM:
 	call BattleEnd_HandleRoamMons
 	xor a
-	ld [wTempPID1], a
-	ld [wTempPID2], a
 	ld [wLowHealthAlarm], a
 	ld [wBattleMode], a
 	ld [wBattleType], a

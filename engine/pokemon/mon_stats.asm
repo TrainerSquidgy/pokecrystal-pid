@@ -122,6 +122,25 @@ PrintTempMonStats:
 	next "@"
 
 GetGender:
+	
+	ld a, [wCurPartySpecies]
+	dec a
+	ld hl, BaseData + BASE_GENDER
+	ld bc, BASE_DATA_SIZE
+	call AddNTimes
+	ld a, BANK(BaseData)
+	call GetFarByte
+	ld b, a ; store gender ratio
+
+	cp GENDER_UNKNOWN
+	jr z, .genderless
+
+	cp GENDER_F0
+	jr z, .male
+	cp GENDER_F100
+	jr z, .female
+
+
 	ld a, [wMonType]
 	cp WILDMON
 	jr z, .wild
@@ -139,15 +158,14 @@ GetGender:
 	ld l, a
 	ld a, [wTempPID2]
 	ld h, a
-	jr .determine_gender_from_pid
-
+	jr .determine
 .tempmon
 .party
 	ld a, [wTempMonCaughtData]
 	ld l, a
 	ld a, [wTempMonCaughtData + 1]
 	ld h, a
-	jr .determine_gender_from_pid
+	jr .determine
 
 .boxmon
 	; Same as party for now (uses tempmon copy)
@@ -155,7 +173,7 @@ GetGender:
 	ld l, a
 	ld a, [wTempMonCaughtData + 1]
 	ld h, a
-	jr .determine_gender_from_pid
+	jr .determine
 
 .trainer
 	ld a, [wTrainerClass]
@@ -164,45 +182,24 @@ GetGender:
 	jr z, .female
 	ld a, 1
 	ret ; male
+.determine
+	; PID low byte now in L, ratio in B
+	ld a, l
+	cp b
+	jr nc, .female
+	jr .male
 
 .female
 	xor a
 	ret
 
-.determine_gender_from_pid
-	; HL = PID
-	; Load gender ratio
-	push hl
-	ld a, [wCurPartySpecies]
-	dec a
-	ld hl, BaseData + BASE_GENDER
-	ld bc, BASE_DATA_SIZE
-	call AddNTimes
-	ld a, BANK(BaseData)
-	call GetFarByte
-	pop hl
-
-	cp GENDER_UNKNOWN
-	jr z, .genderless
-
-	cp GENDER_F0
-	jr z, .male
-	cp GENDER_F100
-	jr z, .female
-
-	; Compare lower byte of PID to ratio
-	ld a, l
-	cp b
-	jr c, .male
-	jr .female
-
-.genderless
-	scf
-	ret
-
 .male
 	ld a, 1
 	and a
+	ret
+
+.genderless
+	scf
 	ret
 	
 CheckTrainerGender:
