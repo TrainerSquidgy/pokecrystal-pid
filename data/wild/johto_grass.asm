@@ -1245,8 +1245,8 @@ JohtoGrassWildMons:
 	db 3, HOPPIP
 	db 3, HOPPIP
 	; day
-	db 2, PIDGEY
-	db 2, SENTRET
+	db 2, MILTANK
+	db 2, TAUROS
 	db 3, PIDGEY
 	db 3, SENTRET
 	db 2, RATTATA

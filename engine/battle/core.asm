@@ -4755,16 +4755,23 @@ DrawEnemyHUD:
 	ld a, [hl]
 	ld [de], a
 
-	ld a, TEMPMON
+	ld a, WILDMON
 	ld [wMonType], a
 	callfar GetGender
+	ld a, [wDisplayedGender]
+	and a
+	jr z, .female
+	dec a
+	and a
+	jr z, .male
 	ld a, " "
-	jr c, .got_gender
+	jr .place_gender
+.male
 	ld a, "♂"
-	jr nz, .got_gender
+	jr .place_gender
+.female
 	ld a, "♀"
-
-.got_gender
+.place_gender
 	hlcoord 9, 1
 	ld [hl], a
 
@@ -6109,10 +6116,19 @@ LoadEnemyMon:
 ; Forced shiny battle type
 ; Used by Red Gyarados at Lake of Rage
 	cp BATTLETYPE_FORCESHINY
-	jr nz, .GenerateDVs
+	jr .GenerateDVs
 
-	ld b, ATKDEFDV_SHINY ; $ea
-	ld c, SPDSPCDV_SHINY ; $aa
+	call Random
+	and %00000111 ; choose 0–7
+	ld e, a
+	ld d, 0
+	ld hl, ShinyPIDTable
+	add hl, de
+	add hl, de ; each entry is 2 bytes
+	ld a, [hli]
+	ld [wTempPID1], a
+	ld a, [hl]
+	ld [wTempPID2], a
 	jr .UpdateDVs
 
 .GenerateDVs:
@@ -8285,8 +8301,6 @@ ExitBattle:
 CleanUpBattleRAM:
 	call BattleEnd_HandleRoamMons
 	xor a
-	ld [wTempPID1], a
-	ld [wTempPID2], a
 	ld [wLowHealthAlarm], a
 	ld [wBattleMode], a
 	ld [wBattleType], a
@@ -9144,3 +9158,13 @@ BattleStartMessage:
 	farcall Mobile_PrintOpponentBattleMessage
 
 	ret
+
+ShinyPIDTable:
+	dw $1FFF
+	dw $3FFF
+	dw $5FFF
+	dw $7FFF
+	dw $9FFF
+	dw $BFFF
+	dw $DFFF
+	dw $FFFF

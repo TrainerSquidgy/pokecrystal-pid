@@ -27,6 +27,7 @@ MaleTrainers:
 	db BIKER
 	db SCIENTIST
 .End
+MaleTrainers_End:
 
 FemaleTrainers:
 	db MEDIUM
@@ -40,3 +41,4 @@ FemaleTrainers:
 	db POKEFANF
 	db COOLTRAINERF
 .End
+FemaleTrainers_End:

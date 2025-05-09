@@ -104,10 +104,20 @@ NamingScreenJumptable:
 	inc de
 	hlcoord 5, 4
 	call PlaceString
+	ld a, TEMPMON
+	ld [wMonType], a
+	ld a, [wCurPartySpecies]
+	ld [wTempMonSpecies], a
 	farcall GetGender
-	jr c, .genderless
+	ld a, [wDisplayedGender]
+	and a
+	jr z, .female
+	dec a
+	and a
+	jr nz, .genderless	
 	ld a, "♂"
-	jr nz, .place_gender
+	jr .place_gender
+.female
 	ld a, "♀"
 .place_gender
 	hlcoord 1, 2
@@ -1371,3 +1381,5 @@ MailComposition_TryAddLastCharacter:
 	jp NamingScreen_LoadNextCharacter
 
 INCLUDE "data/text/mail_input_chars.asm"
+
+
