@@ -21,70 +21,20 @@ CheckEnemyShinyFromPID:
 	
 CheckPIDShinyCommon:
 	; HL = PID
-	ld a, l
-	cp LOW($1FFF)
-	jr nz, .next1
 	ld a, h
-	cp HIGH($1FFF)
-	jr z, .shiny
-.next1
-	ld a, l
-	cp LOW($3FFF)
-	jr nz, .next2
-	ld a, h
-	cp HIGH($3FFF)
-	jr z, .shiny
-.next2
-	ld a, l
-	cp LOW($5FFF)
-	jr nz, .next3
-	ld a, h
-	cp HIGH($5FFF)
-	jr z, .shiny
-.next3
-	ld a, l
-	cp LOW($7FFF)
-	jr nz, .next4
-	ld a, h
-	cp HIGH($7FFF)
-	jr z, .shiny
-.next4
-	ld a, l
-	cp LOW($9FFF)
-	jr nz, .next5
-	ld a, h
-	cp HIGH($9FFF)
-	jr z, .shiny
-.next5
-	ld a, l
-	cp LOW($BFFF)
-	jr nz, .next6
-	ld a, h
-	cp HIGH($BFFF)
-	jr z, .shiny
-.next6
-	ld a, l
-	cp LOW($DFFF)
-	jr nz, .next7
-	ld a, h
-	cp HIGH($DFFF)
-	jr z, .shiny
-.next7
-	ld a, l
-	cp LOW($FFFF)
+	cp $FF
 	jr nz, .not_shiny
-	ld a, h
-	cp HIGH($FFFF)
-	jr z, .shiny
+	ld a, l
+	cp $F8
+	jr nc, .shiny
 
 .not_shiny
-	and a
+	and a ; clear carry
 	ret
 
 .shiny
-	scf
+	scf ; set carry
 	ret
-
 
 Unused_CheckShininess:
 ; Return carry if the DVs at hl are all 10 or higher.
