@@ -464,11 +464,17 @@ StatsScreen_InitUpperHalf:
 	push hl
 	farcall GetGender
 	pop hl
-	ret c
+	ld a, [wDisplayedGender]
+	and a
+	jr z, .female
+	dec a
+	and a
+	ret nz
 	ld a, "♂"
-	jr nz, .got_gender
+	jr .place_gender
+.female
 	ld a, "♀"
-.got_gender
+.place_gender
 	ld [hl], a
 	ret
 
@@ -589,18 +595,57 @@ LoadOrangePage:
 
 	; Display "PID:" label
 	ld de, .pidLabel
-	hlcoord 1, 9
+	hlcoord 2, 9
 	call PlaceString
 
 	; Display the 16-bit number after "PID:"
-	hlcoord 6, 9 ; Adjust as needed
+	hlcoord 6, 9 
 	ld de, wTextDecimalByte
 	lb bc, PRINTNUM_LEFTALIGN | 2, 5 ; 5-digit max
 	call PrintNum
+	
+	; Store to wTextDecimalByte (1 byte)
+	ld a, [wTempMonCaughtData]
+	ld [wTextDecimalByte], a
+	xor a
+	ld [wTextDecimalByte + 1], a
+
+	; Display "PID1:" label
+	ld de, .pid1Label
+	hlcoord 1, 11
+	call PlaceString
+
+	; Display the 8-bit number after "PID1:"
+	hlcoord 6, 11 
+	ld de, wTextDecimalByte
+	lb bc, PRINTNUM_LEADINGZEROS | 1, 3 ; 5-digit max
+	call PrintNum
+	
+	; Store to wTextDecimalByte (1 byte)
+	ld a, [wTempMonCaughtData + 1]
+	ld [wTextDecimalByte], a
+	xor a
+	ld [wTextDecimalByte + 1], a
+
+	; Display "PID2:" label
+	ld de, .pid2Label
+	hlcoord 1, 13
+	call PlaceString
+
+	; Display the 8-bit number after "PID2:"
+	hlcoord 6, 13 
+	ld de, wTextDecimalByte
+	lb bc, PRINTNUM_LEADINGZEROS | 1, 3 ; 5-digit max
+	call PrintNum
+	
 	ret
 
 .pidLabel:
 	db "PID:@"
+.pid1Label:
+	db "PID1:@"
+.pid2Label:
+	db "PID2:@"
 
 LoadPinkPage:
 	hlcoord 0, 9
